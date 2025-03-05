@@ -1,18 +1,18 @@
-import { StyleSheet, View, FlatList, ActivityIndicator, useWindowDimensions } from "react-native";
+import { StyleSheet, View, FlatList, ActivityIndicator } from "react-native";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Card from "../../components/Card";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const initialPage = 1;  
+const initialPage = 1;
 
 export default function HomeScreen() {
   const [data, setData] = useState([]);
   const [page, setPage] = useState(initialPage);
   const [loading, setLoading] = useState(false);
-
-  const { width } = useWindowDimensions();
+  const [bookmarks, setBookmarks] = useState([]);
 
   const fetchData = async (pageNum) => {
-    if (loading) return; 
+    if (loading) return;
 
     setLoading(true);
     try {
@@ -23,10 +23,6 @@ export default function HomeScreen() {
       if (newData.length > 0) {
         setData((prevData) => [...prevData, ...newData]);
         setPage(pageNum + 1);
-      } else {
-        setData([]); 
-        setPage(initialPage);
-        fetchData(initialPage); 
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -36,18 +32,52 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchData(initialPage);
+    loadBookmarks();
   }, []);
+
+  const loadBookmarks = async () => {
+    try {
+      const storedBookmarks = await AsyncStorage.getItem("bookmarkedJobs");
+      if (storedBookmarks) {
+        setBookmarks(JSON.parse(storedBookmarks));
+      }
+    } catch (error) {
+      console.error("Error loading bookmarks:", error);
+    }
+  };
+
+  const handleBookmark = async (job) => {
+    let updatedBookmarks;
+    if (bookmarks.some((item) => item.id === job.id)) {
+      updatedBookmarks = bookmarks.filter((item) => item.id !== job.id);
+    } else {
+      updatedBookmarks = [...bookmarks, job];
+    }
+
+    setBookmarks(updatedBookmarks);
+    await AsyncStorage.setItem("bookmarkedJobs", JSON.stringify(updatedBookmarks));
+  };
 
   const onRefresh = () => {
     if (loading) return;
     setData([]);
     setPage(initialPage);
     fetchData(initialPage);
+    loadBookmarks(); 
   };
 
-  const renderItem = useCallback(({ item }) => <Card job={item} />, []);
+  const renderItem = useCallback(
+    ({ item }) => (
+      <Card
+        job={item}
+        onBookmark={handleBookmark}
+        isBookmarked={bookmarks.some((b) => b.id === item.id)}
+      />
+    ),
+    [bookmarks]
+  );
 
-  const itemHeight = 150; 
+  const itemHeight = 150;
 
   const viewabilityConfigCallbackPairs = useRef([
     {
@@ -70,9 +100,9 @@ export default function HomeScreen() {
       <FlatList
         data={data}
         renderItem={renderItem}
-        keyExtractor={(item, index) => index.toString()} 
+        keyExtractor={(item) => item?.id} 
         onEndReached={() => fetchData(page)}
-        onEndReachedThreshold={5}
+        onEndReachedThreshold={0.5} 
         ListFooterComponent={() => loading && <ActivityIndicator size="large" color="#0000ff" />}
         refreshing={loading}
         onRefresh={onRefresh}
@@ -93,3 +123,4 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 });
+

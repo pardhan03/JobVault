@@ -6,6 +6,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme } from 'react-native';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
+
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,8 +30,30 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="job-detail" options={{ title: 'Job-Detail' }} />
+        <Stack.Screen name="(tabs)"  options={{
+            title: "Jobs",
+            headerTitleAlign: "center",
+            headerTitleStyle: {
+              fontSize: 22,
+              fontWeight: "bold",
+              color: colorScheme === 'dark' ? "#facc15" : "#0f172a", 
+            },
+            headerStyle: {
+              backgroundColor: colorScheme === 'dark' ? "#1e293b" : "#f8fafc", 
+            }
+          }}  />
+        <Stack.Screen name="job-detail"  options={{
+            title: "Job Description",
+            headerTitleAlign: "center",
+            headerTitleStyle: {
+              fontSize: 22,
+              fontWeight: "bold",
+              color: colorScheme === 'dark' ? "#facc15" : "#0f172a", 
+            },
+            headerStyle: {
+              backgroundColor: colorScheme === 'dark' ? "#1e293b" : "#f8fafc", 
+            }
+          }}  />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

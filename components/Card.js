@@ -5,9 +5,8 @@ import { useRouter } from "expo-router";
 
 
 
-const Card = ({ job, onBookmark  }) => {
+const Card = ({ job, onBookmark, isBookmarked  }) => {
   const router=useRouter()
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const handlePress = () => {
     router.push({
       pathname: "/job-detail",
@@ -16,7 +15,6 @@ const Card = ({ job, onBookmark  }) => {
   };
 
   const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
     onBookmark(job); 
   };
 
@@ -30,7 +28,7 @@ const Card = ({ job, onBookmark  }) => {
           </Text>
         </View>
         <TouchableOpacity onPress={handleBookmark}>
-          <FontAwesome
+        <FontAwesome
             name={isBookmarked ? "bookmark" : "bookmark-o"}
             size={24}
             color={isBookmarked ? "#facc15" : "#94a3b8"}
