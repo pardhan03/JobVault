@@ -1,16 +1,27 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { FontAwesome, Ionicons } from "@expo/vector-icons"; // Import vector icons
+import { FontAwesome, Ionicons } from "@expo/vector-icons"; 
+import { useRouter } from "expo-router";
 
-const Card = ({ job }) => {
+
+
+const Card = ({ job, onBookmark  }) => {
+  const router=useRouter()
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const handlePress = () => {
+    router.push({
+      pathname: "/job-detail",
+      params: { ...job },
+    });
+  };
 
-  const toggleBookmark = () => {
+  const handleBookmark = () => {
     setIsBookmarked(!isBookmarked);
+    onBookmark(job); 
   };
 
   return (
-    <TouchableOpacity  style={styles.card}>
+    <TouchableOpacity  style={styles.card} onPress={handlePress}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Ionicons name="briefcase" size={22} color="#0f172a" />
@@ -18,7 +29,7 @@ const Card = ({ job }) => {
             {job.title}
           </Text>
         </View>
-        <TouchableOpacity onPress={toggleBookmark}>
+        <TouchableOpacity onPress={handleBookmark}>
           <FontAwesome
             name={isBookmarked ? "bookmark" : "bookmark-o"}
             size={24}

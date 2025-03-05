@@ -1,26 +1,32 @@
-import {  StyleSheet,View, FlatList, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import Card from '../../components/Card';
+import { StyleSheet, View, FlatList, ActivityIndicator, useWindowDimensions } from "react-native";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import Card from "../../components/Card";
+
+const initialPage = 1;  
+
 export default function HomeScreen() {
   const [data, setData] = useState([]);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialPage);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true); 
 
-  const fetchData = async () => {
-    if (loading || !hasMore) return; 
+  const { width } = useWindowDimensions();
+
+  const fetchData = async (pageNum) => {
+    if (loading) return; 
 
     setLoading(true);
     try {
-      const response = await axios.get(`https://testapi.getlokalapp.com/common/jobs?page=${page}`);
-      const newData = response?.data?.results; 
+      const response = await fetch(`https://testapi.getlokalapp.com/common/jobs?page=${pageNum}`);
+      const result = await response.json();
+      const newData = result?.results || [];
 
       if (newData.length > 0) {
-        setData(prevData => [...prevData, ...newData]);
-        setPage(prevPage => prevPage + 1);
+        setData((prevData) => [...prevData, ...newData]);
+        setPage(pageNum + 1);
       } else {
-        setHasMore(false); 
+        setData([]); 
+        setPage(initialPage);
+        fetchData(initialPage); 
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -29,38 +35,61 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(initialPage);
   }, []);
 
+  const onRefresh = () => {
+    if (loading) return;
+    setData([]);
+    setPage(initialPage);
+    fetchData(initialPage);
+  };
+
+  const renderItem = useCallback(({ item }) => <Card job={item} />, []);
+
+  const itemHeight = 150; 
+
+  const viewabilityConfigCallbackPairs = useRef([
+    {
+      viewabilityConfig: {
+        minimumViewTime: 500,
+        itemVisiblePercentThreshold: 50,
+      },
+      onViewableItemsChanged: ({ changed }) => {
+        changed.forEach((changedItem) => {
+          if (changedItem.isViewable) {
+            console.log("++ Impression for: ", changedItem.item.id);
+          }
+        });
+      },
+    },
+  ]);
+
   return (
-   <View>
-     <FlatList
+    <View style={styles.container}>
+      <FlatList
         data={data}
-        renderItem={({ item }) => <Card job={item} />}
-        keyExtractor={item => item?.id}
-        onEndReached={fetchData} 
-        onEndReachedThreshold={0.5} 
-        ListFooterComponent={() => loading ? <ActivityIndicator size="large" color="#0000ff" /> : null}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => index.toString()} 
+        onEndReached={() => fetchData(page)}
+        onEndReachedThreshold={5}
+        ListFooterComponent={() => loading && <ActivityIndicator size="large" color="#0000ff" />}
+        refreshing={loading}
+        onRefresh={onRefresh}
+        getItemLayout={(data, index) => ({
+          length: itemHeight,
+          offset: itemHeight * index,
+          index,
+        })}
+        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
       />
-   </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
   },
 });
